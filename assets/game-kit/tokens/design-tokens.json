@@ -1,0 +1,108 @@
+{
+  "name": "Kids Learning Game UI Kit",
+  "color": {
+    "brand": {
+      "yellow": {
+        "base": "#FBBD0C",
+        "shade": "#D9970A",
+        "tint": "#FFD75E"
+      },
+      "green": {
+        "base": "#5FBE41",
+        "shade": "#489030",
+        "tint": "#8FDD6E"
+      },
+      "purple": {
+        "base": "#9C69D3",
+        "shade": "#7A47B0",
+        "tint": "#C39CEA"
+      },
+      "blue": {
+        "base": "#3A8BE8",
+        "shade": "#2A6ABC",
+        "tint": "#7CB6F5"
+      },
+      "pink": {
+        "base": "#FA7697",
+        "shade": "#D24F70",
+        "tint": "#FFA8BF"
+      },
+      "orange": {
+        "base": "#F59323",
+        "shade": "#C9740F",
+        "tint": "#FFB861"
+      },
+      "teal": {
+        "base": "#2FC2C7",
+        "shade": "#219A9E",
+        "tint": "#79E0E3"
+      },
+      "indigo": {
+        "base": "#6561B9",
+        "shade": "#4941A5",
+        "tint": "#9A96D8"
+      }
+    },
+    "ink": "#3B2E5A",
+    "surface": "#FFFFFF",
+    "surfaceMuted": "#F5F3FA",
+    "textMuted": "#8C86A8",
+    "sky": {
+      "top": "#4EB8F5",
+      "bottom": "#2C98F9"
+    },
+    "sun": {
+      "top": "#FDE78C",
+      "bottom": "#FDD864"
+    },
+    "grass": {
+      "light": "#7CCB4F",
+      "dark": "#4F9D42"
+    }
+  },
+  "radius": {
+    "sm": 12,
+    "md": 22,
+    "lg": 30,
+    "pill": 999
+  },
+  "depth": {
+    "button": 8,
+    "tile": 10,
+    "note": "Bottom-edge offset that gives the chunky 3D look"
+  },
+  "stroke": {
+    "outline": 4,
+    "outlineColor": "#FFFFFF"
+  },
+  "shadow": {
+    "soft": "0 4px 6px rgba(27,18,54,.18)",
+    "card": "0 6px 10px rgba(27,18,54,.16)"
+  },
+  "font": {
+    "family": "Fredoka / Baloo 2 / Nunito",
+    "weights": [
+      600,
+      700,
+      800
+    ],
+    "sizes": {
+      "title": 26,
+      "body": 18,
+      "label": 13,
+      "answer": 56
+    }
+  },
+  "spacing": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32
+  ],
+  "targetSize": {
+    "min": 64,
+    "note": "Minimum tap target for young children"
+  }
+}

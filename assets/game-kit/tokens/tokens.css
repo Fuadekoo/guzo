@@ -1,0 +1,48 @@
+/* Kids Learning Game UI Kit - design tokens */
+:root {
+  --c-yellow: #FBBD0C;
+  --c-yellow-shade: #D9970A;
+  --c-yellow-tint: #FFD75E;
+  --c-green: #5FBE41;
+  --c-green-shade: #489030;
+  --c-green-tint: #8FDD6E;
+  --c-purple: #9C69D3;
+  --c-purple-shade: #7A47B0;
+  --c-purple-tint: #C39CEA;
+  --c-blue: #3A8BE8;
+  --c-blue-shade: #2A6ABC;
+  --c-blue-tint: #7CB6F5;
+  --c-pink: #FA7697;
+  --c-pink-shade: #D24F70;
+  --c-pink-tint: #FFA8BF;
+  --c-orange: #F59323;
+  --c-orange-shade: #C9740F;
+  --c-orange-tint: #FFB861;
+  --c-teal: #2FC2C7;
+  --c-teal-shade: #219A9E;
+  --c-teal-tint: #79E0E3;
+  --c-indigo: #6561B9;
+  --c-indigo-shade: #4941A5;
+  --c-indigo-tint: #9A96D8;
+  --c-ink: #3B2E5A;
+  --c-surface: #FFFFFF;
+  --c-surface-muted: #F5F3FA;
+  --c-text-muted: #8C86A8;
+  --c-sky-top: #4EB8F5;
+  --c-sky-bottom: #2C98F9;
+  --c-sun-top: #FDE78C;
+  --c-sun-bottom: #FDD864;
+  --c-grass-light: #7CCB4F;
+  --c-grass-dark: #4F9D42;
+  --r-sm: 12px;
+  --r-md: 22px;
+  --r-lg: 30px;
+  --r-pill: 999px;
+  --depth-button: 8px;
+  --depth-tile: 10px;
+  --outline: 4px solid #FFFFFF;
+  --shadow-soft: 0 4px 6px rgba(27,18,54,.18);
+  --shadow-card: 0 6px 10px rgba(27,18,54,.16);
+  --font-display: Fredoka, 'Baloo 2', Nunito, system-ui, sans-serif;
+  --tap-min: 64px;
+}
