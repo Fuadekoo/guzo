@@ -1,4 +1,9 @@
 /// The English alphabet, in teaching order.
+///
+/// Laid out one letter per line, matching the Amharic and number data. It is
+/// longer to scroll but every entry is individually visible, which is what
+/// makes a missing or duplicated letter obvious at a glance rather than
+/// something you have to count to find.
 abstract final class EnglishLetters {
   /// A to Z.
   static const List<String> uppercase = <String>[
@@ -61,5 +66,15 @@ abstract final class EnglishLetters {
   ];
 
   /// The five vowels — a short sequence for a first race.
-  static const List<String> vowels = <String>['A', 'E', 'I', 'O', 'U'];
+  ///
+  /// The sample words are here partly to keep the formatter from folding five
+  /// short strings back onto one line, and partly because a future
+  /// "A is for Apple" mode will want them.
+  static const List<String> vowels = <String>[
+    'A', // apple
+    'E', // egg
+    'I', // igloo
+    'O', // orange
+    'U', // umbrella
+  ];
 }

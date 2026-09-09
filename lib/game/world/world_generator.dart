@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../../utils/constants.dart';
 import '../../utils/deterministic_random.dart';
+import 'coin.dart';
 import 'collectible.dart';
 import 'obstacle_kind.dart';
 import 'track_chunk.dart';
@@ -42,11 +43,19 @@ class WorldGenerator {
     // between them, so a child is never asked to read a letter and dodge a
     // barrier in the same moment.
     final List<Obstacle> obstacles = _generateObstacles(random, index, startZ);
+    final List<Coin> coins = <Coin>[];
 
     return TrackChunk(
       index: index,
       obstacles: obstacles,
-      collectibles: _generateCollectibles(random, index, startZ, obstacles),
+      collectibles: _generateCollectibles(
+        random,
+        index,
+        startZ,
+        obstacles,
+        coins,
+      ),
+      coins: coins,
       scenery: _generateScenery(random, startZ),
     );
   }
@@ -163,11 +172,14 @@ class WorldGenerator {
   /// generator has no idea which letter any player needs, and does not need
   /// to: it only decides *whether* a tile is the target, the next one along,
   /// or some other item.
+  /// Coins are emitted into [coins] as a side effect of the same walk, because
+  /// they are placed *relative to* the letter groups — see [_fillInterval].
   List<Collectible> _generateCollectibles(
     DeterministicRandom random,
     int index,
     double startZ,
     List<Obstacle> obstacles,
+    List<Coin> coins,
   ) {
     final List<Collectible> collectibles = <Collectible>[];
     final double endZ = startZ + GuzoWorld.chunkLength;
@@ -183,10 +195,10 @@ class WorldGenerator {
 
     double from = startZ;
     for (final double row in rows) {
-      _fillInterval(random, collectibles, cursor, from, row);
+      _fillInterval(random, collectibles, coins, cursor, from, row);
       from = row;
     }
-    _fillInterval(random, collectibles, cursor, from, endZ);
+    _fillInterval(random, collectibles, coins, cursor, from, endZ);
 
     return collectibles;
   }
@@ -210,6 +222,7 @@ class WorldGenerator {
   void _fillInterval(
     DeterministicRandom random,
     List<Collectible> into,
+    List<Coin> coins,
     _GroupCursor cursor,
     double from,
     double to,
@@ -231,8 +244,26 @@ class WorldGenerator {
       // A moment of plain running before the first pickup, so the very first
       // thing a child meets is not a decision.
       if (z >= GuzoCollectibles.startDistance) {
-        into.addAll(
-          _buildGroup(random, baseId: cursor.next(), startZ: z, size: size),
+        final int groupId = cursor.next();
+        final List<Collectible> group = _buildGroup(
+          random,
+          baseId: groupId,
+          startZ: z,
+          size: size,
+        );
+        into.addAll(group);
+
+        // The coin run goes in a *different* lane from the letters, which is
+        // the central choice of a GUZO run: take the letter you need, or take
+        // the coins that buy a boost. Putting them in the same lane would make
+        // both free and the decision disappear.
+        _addCoinRun(
+          random,
+          coins,
+          baseId: groupId,
+          startZ: z,
+          limit: limit,
+          avoidLane: group.first.lane,
         );
       }
 
@@ -242,6 +273,48 @@ class WorldGenerator {
             GuzoCollectibles.minGroupGap,
             GuzoCollectibles.maxGroupGap,
           );
+    }
+  }
+
+  /// Lays a line of coins beside a letter group, in a lane it does not use.
+  void _addCoinRun(
+    DeterministicRandom random,
+    List<Coin> coins, {
+    required int baseId,
+    required double startZ,
+    required double limit,
+    required int avoidLane,
+  }) {
+    final List<int> lanes = <int>[-1, 0, 1]
+      ..removeWhere((int lane) => lane == avoidLane);
+    final int lane = random.pick(lanes);
+
+    final int length =
+        GuzoEconomy.minRunLength +
+        random.nextInt(GuzoEconomy.maxRunLength - GuzoEconomy.minRunLength + 1);
+    final double span = (length - 1) * GuzoEconomy.coinSpacing;
+    if (startZ + span > limit) return;
+
+    // An arc traces the path of a jump, so the reward for jumping is a whole
+    // run of coins rather than a single one.
+    final bool arcs = random.chance(GuzoEconomy.arcChance);
+
+    for (int i = 0; i < length; i++) {
+      double height = GuzoEconomy.coinHeight;
+      if (arcs && length > 1) {
+        // A half-sine over the run: rises to the middle and comes back down.
+        final double t = i / (length - 1);
+        height += math.sin(t * math.pi) * GuzoEconomy.coinArcLift;
+      }
+
+      coins.add(
+        Coin(
+          id: baseId * 100 + i,
+          worldZ: startZ + i * GuzoEconomy.coinSpacing,
+          lane: lane,
+          height: height,
+        ),
+      );
     }
   }
 

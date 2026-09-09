@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../../utils/constants.dart';
+import 'coin.dart';
 import 'collectible.dart';
 import 'obstacle_kind.dart';
 
@@ -100,6 +101,7 @@ class TrackChunk {
     required this.obstacles,
     required this.scenery,
     required this.collectibles,
+    required this.coins,
   });
 
   final int index;
@@ -108,6 +110,9 @@ class TrackChunk {
 
   /// Educational pickups, ordered by ascending distance.
   final List<Collectible> collectibles;
+
+  /// Coins, ordered by ascending distance.
+  final List<Coin> coins;
 
   double get startZ => index * GuzoWorld.chunkLength;
   double get endZ => startZ + GuzoWorld.chunkLength;

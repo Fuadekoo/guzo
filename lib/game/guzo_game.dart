@@ -7,12 +7,15 @@ import 'package:flutter/widgets.dart';
 import '../education/sequence_definition.dart';
 import '../education/sequence_library.dart';
 import '../education/sequence_tracker.dart';
+import '../services/audio_service.dart';
 import '../utils/constants.dart';
 import 'camera/perspective_camera.dart';
 import 'components/sky_background.dart';
 import 'components/track_view.dart';
 import 'input/swipe_recognizer.dart';
 import 'player/player_controller.dart';
+import 'systems/boost_controller.dart';
+import 'systems/coin_system.dart';
 import 'systems/collection_system.dart';
 import 'systems/collision_system.dart';
 import 'world/track_chunk.dart';
@@ -38,12 +41,18 @@ class GuzoGame extends FlameGame with KeyboardEvents {
   /// collected. In single player both are local choices; in multiplayer the
   /// host picks them and every client is given the same values, which is what
   /// makes all players race an identical world toward an identical goal.
-  GuzoGame({int? seed, SequenceDefinition? sequence})
+  ///
+  /// [audio] defaults to the shared service, which is silent until it has
+  /// successfully initialised — so a test with no audio plugin is safe without
+  /// having to pass anything.
+  GuzoGame({int? seed, SequenceDefinition? sequence, GameAudio? audio})
     : seed = seed ?? DateTime.now().millisecondsSinceEpoch & 0x7FFFFFFF,
-      sequence = sequence ?? SequenceLibrary.defaultSequence;
+      sequence = sequence ?? SequenceLibrary.defaultSequence,
+      audio = audio ?? AudioService.instance;
 
   final int seed;
   final SequenceDefinition sequence;
+  final GameAudio audio;
 
   /// Projects the metre-based world onto the screen, and carries the camera's
   /// travelled distance — the authoritative "where are we" value.
@@ -52,6 +61,9 @@ class GuzoGame extends FlameGame with KeyboardEvents {
   final PlayerController player = PlayerController();
   final CollisionSystem collisions = CollisionSystem();
   final CollectionSystem collection = CollectionSystem();
+  final CoinSystem coinPickups = CoinSystem();
+  final CoinWallet wallet = CoinWallet();
+  final BoostController boost = BoostController();
 
   late final SequenceTracker tracker = SequenceTracker(sequence);
   late final TrackManager track = TrackManager(seed: seed);
@@ -69,6 +81,12 @@ class GuzoGame extends FlameGame with KeyboardEvents {
   /// Number of obstacles hit this run.
   final ValueNotifier<int> stumbles = ValueNotifier<int>(0);
 
+  /// Coins banked this run.
+  final ValueNotifier<int> coins = ValueNotifier<int>(0);
+
+  /// Seconds of boost left, or zero. Drives the HUD countdown.
+  final ValueNotifier<double> boostRemaining = ValueNotifier<double>(0);
+
   /// How many sequence items have been collected. The HUD watches this and
   /// reads [tracker] for the detail, so progress redraws only when it changes.
   final ValueNotifier<int> collectedCount = ValueNotifier<int>(0);
@@ -79,7 +97,7 @@ class GuzoGame extends FlameGame with KeyboardEvents {
   );
 
   /// Flips once the sequence is finished. The game screen watches this and
-  /// shows the completion overlay.
+  /// shows the result screen.
   final ValueNotifier<bool> isComplete = ValueNotifier<bool>(false);
 
   /// Seconds since the run started; drives cosmetic wobble and flicker only.
@@ -93,9 +111,11 @@ class GuzoGame extends FlameGame with KeyboardEvents {
   /// How long a pickup flash stays up, in seconds.
   static const double _feedbackDuration = 0.55;
 
-  /// Forward speed right now, after any stumble penalty.
+  /// Forward speed right now, after the stumble penalty and any boost.
   double get speed =>
-      GuzoWorld.speedAt(perspective.travelled) * player.speedMultiplier;
+      GuzoWorld.speedAt(perspective.travelled) *
+      player.speedMultiplier *
+      boost.speedMultiplier;
 
   /// Distance run so far, in metres.
   double get distance => perspective.travelled;
@@ -124,18 +144,26 @@ class GuzoGame extends FlameGame with KeyboardEvents {
     _expireFeedback();
 
     // The world stops advancing the moment the sequence is finished, so the
-    // completion overlay sits over a still scene rather than a moving one.
+    // result screen sits over a still scene rather than a moving one.
     if (isComplete.value) return;
 
     runTime += dt;
+    boost.update(dt);
+
     final double distanceMoved = speed * dt;
 
-    perspective.update(dt, distanceMoved, player.x);
+    perspective.update(
+      dt,
+      distanceMoved,
+      player.x,
+      boostIntensity: boost.intensity,
+    );
     player.update(dt, distanceMoved);
     track.ensureGenerated(perspective.travelled);
 
     _resolveCollisions();
     _resolveCollections();
+    _resolveCoins();
     _publishHudValues();
   }
 
@@ -148,10 +176,18 @@ class GuzoGame extends FlameGame with KeyboardEvents {
     );
     if (hit == null) return;
 
+    // Boosting bursts straight through instead of stumbling — the reward for
+    // having spent the coins.
+    if (boost.smashesObstacles) {
+      audio.play(GuzoSound.smash);
+      return;
+    }
+
     // stumble() refuses while the runner is still protected from a previous
     // hit, so a cluster of obstacles costs one stumble, not three.
     if (player.stumble()) {
       stumbles.value++;
+      audio.play(GuzoSound.hit);
     }
   }
 
@@ -166,20 +202,34 @@ class GuzoGame extends FlameGame with KeyboardEvents {
     if (events.isEmpty) return;
 
     for (final CollectionEvent event in events) {
-      _showFeedback(
-        event.finishedSequence
-            ? PickupFeedback.finished
-            : event.isCorrect
-            ? PickupFeedback.correct
-            : PickupFeedback.wrong,
-      );
-
       if (event.finishedSequence) {
+        _showFeedback(PickupFeedback.finished);
+        audio.play(GuzoSound.complete);
         isComplete.value = true;
+      } else if (event.isCorrect) {
+        _showFeedback(PickupFeedback.correct);
+        audio.play(GuzoSound.correct);
+      } else {
+        _showFeedback(PickupFeedback.wrong);
+        audio.play(GuzoSound.wrong);
       }
     }
 
     collectedCount.value = tracker.collectedCount;
+  }
+
+  void _resolveCoins() {
+    final double playerWorldZ = perspective.playerWorldZ;
+    final int taken = coinPickups.collect(
+      player,
+      track.coinsNear(playerWorldZ, CoinSystem.searchWindow),
+      wallet,
+      playerWorldZ,
+    );
+    if (taken == 0) return;
+
+    coins.value = wallet.coins;
+    audio.play(GuzoSound.coin);
   }
 
   void _showFeedback(PickupFeedback value) {
@@ -203,6 +253,12 @@ class GuzoGame extends FlameGame with KeyboardEvents {
     if ((current - speedNotifier.value).abs() > 0.05) {
       speedNotifier.value = current;
     }
+
+    // A tenth of a second is the finest the countdown displays.
+    if ((boost.remaining - boostRemaining.value).abs() > 0.05 ||
+        (boost.remaining == 0) != (boostRemaining.value == 0)) {
+      boostRemaining.value = boost.remaining;
+    }
   }
 
   // --- Input --------------------------------------------------------------
@@ -217,11 +273,27 @@ class GuzoGame extends FlameGame with KeyboardEvents {
       case SwipeDirection.right:
         player.moveRight();
       case SwipeDirection.up:
+        if (!player.isAirborne) audio.play(GuzoSound.jump);
         player.jump();
       case SwipeDirection.down:
+        if (!player.isSliding) audio.play(GuzoSound.slide);
         player.slide();
     }
   }
+
+  /// Spends coins to start a boost. Returns whether it went through, so the
+  /// HUD button can shake when it did not.
+  bool activateBoost() {
+    if (isComplete.value) return false;
+    if (!boost.activate(wallet)) return false;
+
+    coins.value = wallet.coins;
+    audio.play(GuzoSound.boost);
+    return true;
+  }
+
+  /// True when the boost button should be live.
+  bool get canBoost => !isComplete.value && boost.canActivate(wallet);
 
   void onSwipeStart() => _swipe.start();
 
@@ -259,6 +331,9 @@ class GuzoGame extends FlameGame with KeyboardEvents {
       case LogicalKeyboardKey.arrowDown:
       case LogicalKeyboardKey.keyS:
         applySwipe(SwipeDirection.down);
+      case LogicalKeyboardKey.keyB:
+      case LogicalKeyboardKey.shiftLeft:
+        activateBoost();
       default:
         return KeyEventResult.ignored;
     }
@@ -274,6 +349,9 @@ class GuzoGame extends FlameGame with KeyboardEvents {
     player.reset();
     collisions.reset();
     collection.reset();
+    coinPickups.reset();
+    wallet.reset();
+    boost.reset();
     tracker.reset();
     track.reset();
 
@@ -283,6 +361,8 @@ class GuzoGame extends FlameGame with KeyboardEvents {
     distanceMetres.value = 0;
     speedNotifier.value = GuzoWorld.startSpeed;
     stumbles.value = 0;
+    coins.value = 0;
+    boostRemaining.value = 0;
     collectedCount.value = 0;
     feedback.value = PickupFeedback.none;
     isComplete.value = false;
@@ -293,6 +373,8 @@ class GuzoGame extends FlameGame with KeyboardEvents {
     distanceMetres.dispose();
     speedNotifier.dispose();
     stumbles.dispose();
+    coins.dispose();
+    boostRemaining.dispose();
     collectedCount.dispose();
     feedback.dispose();
     isComplete.dispose();

@@ -154,6 +154,47 @@ void main() {
     );
   });
 
+  group('Boost and coin rendering', () {
+    testWithGame<GuzoGame>(
+      'draws the full arc of a boost without a break',
+      () => GuzoGame(seed: 3),
+      (GuzoGame game) async {
+        await game.ready();
+        _run(game, 6);
+
+        game.wallet.add(GuzoEconomy.boostCost);
+        expect(game.activateBoost(), isTrue);
+
+        // Ramp in, hold, ramp out and tail off — every stage has to draw.
+        for (double t = 0; t < GuzoEconomy.boostDuration + 2; t += 0.25) {
+          _run(game, 0.25);
+          expect(
+            () => _renderFrame(game),
+            returnsNormally,
+            reason: 'failed at boost intensity ${game.boost.intensity}',
+          );
+        }
+
+        expect(game.boost.isActive, isFalse);
+        expect(game.boost.intensity, 0);
+      },
+    );
+
+    testWithGame<GuzoGame>(
+      'draws coins through every angle of their spin',
+      () => GuzoGame(seed: 3),
+      (GuzoGame game) async {
+        await game.ready();
+
+        // A coin passes edge-on twice per turn, where its width collapses.
+        for (int i = 0; i < 30; i++) {
+          _run(game, 0.1);
+          expect(() => _renderFrame(game), returnsNormally);
+        }
+      },
+    );
+  });
+
   group('Projection', () {
     testWithGame<GuzoGame>(
       'the road converges toward the horizon',

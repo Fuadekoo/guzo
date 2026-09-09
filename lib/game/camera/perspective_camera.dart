@@ -20,9 +20,19 @@ import '../../utils/constants.dart';
 ///
 /// Absolute world positions are converted with [relativeZ].
 class PerspectiveCamera {
+  /// Focal length before any boost widening. Set from screen size in [resize].
+  double _baseFocal = 0;
+
+  /// Multiplier applied to the focal length while boosting.
+  ///
+  /// A shorter focal length is a wider field of view, which is what actually
+  /// makes speed feel like speed — more of the world sweeps past the edges per
+  /// second. Eased rather than snapped, so the boost does not lurch.
+  double boostZoom = 1.0;
+
   /// Focal length in pixels; a point 1 m across at 1 m depth spans this many
-  /// pixels. Set from screen height in [resize].
-  double focal = 0;
+  /// pixels.
+  double get focal => _baseFocal * boostZoom;
 
   /// Screen y of the vanishing line.
   double horizonY = 0;
@@ -44,7 +54,7 @@ class PerspectiveCamera {
   void resize(Vector2 size) {
     if (size.x <= 0 || size.y <= 0) return;
     viewport = size.clone();
-    focal = math.min(
+    _baseFocal = math.min(
       size.y * GuzoCamera.focalFactor,
       size.x * GuzoCamera.focalWidthCap,
     );
@@ -53,18 +63,31 @@ class PerspectiveCamera {
   }
 
   /// Advances the camera by [distance] metres and eases it toward [targetX].
-  void update(double dt, double distance, double targetX) {
+  ///
+  /// [boostIntensity] is the boost ramp in `[0, 1]`; it widens the view.
+  void update(
+    double dt,
+    double distance,
+    double targetX, {
+    double boostIntensity = 0,
+  }) {
     travelled += distance;
 
-    final double desired = targetX * GuzoCamera.lateralFollow;
     // Frame-rate independent exponential smoothing.
     final double t = 1 - math.exp(-dt / GuzoCamera.lateralSmoothing);
+
+    final double desired = targetX * GuzoCamera.lateralFollow;
     lateralOffset += (desired - lateralOffset) * t;
+
+    final double desiredZoom =
+        1 + (GuzoEconomy.boostFocalScale - 1) * boostIntensity.clamp(0.0, 1.0);
+    boostZoom += (desiredZoom - boostZoom) * t;
   }
 
   void reset() {
     travelled = 0;
     lateralOffset = 0;
+    boostZoom = 1;
   }
 
   /// Converts an absolute world z into a camera-relative depth.

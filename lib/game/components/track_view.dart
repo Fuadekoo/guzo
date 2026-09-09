@@ -5,11 +5,14 @@ import 'package:flame/components.dart';
 import '../../utils/constants.dart';
 import '../camera/perspective_camera.dart';
 import '../painters/collectible_painter.dart';
+import '../painters/boost_effect_painter.dart';
+import '../painters/coin_painter.dart';
 import '../painters/entity_painter.dart';
 import '../painters/glyph_cache.dart';
 import '../painters/road_painter.dart';
 import '../painters/runner_painter.dart';
 import '../guzo_game.dart';
+import '../world/coin.dart';
 import '../world/collectible.dart';
 import '../world/track_chunk.dart';
 
@@ -39,6 +42,8 @@ class TrackView extends Component with HasGameReference<GuzoGame> {
   final RoadPainter _road = RoadPainter();
   final EntityPainter _entities = EntityPainter();
   final RunnerPainter _runner = RunnerPainter();
+  final CoinPainter _coins = CoinPainter();
+  final BoostEffectPainter _boostEffects = BoostEffectPainter();
   late final CollectiblePainter _collectibles = CollectiblePainter(
     glyphs: GlyphCache(fontFamilyFallback: game.sequence.fontFamilyFallback),
   );
@@ -61,14 +66,20 @@ class TrackView extends Component with HasGameReference<GuzoGame> {
     final PerspectiveCamera camera = game.perspective;
     if (!camera.isReady) return;
 
+    final double boostIntensity = game.boost.intensity;
+
     _road.paint(canvas, camera);
     _renderScenery(canvas, camera);
 
     // Road furniture ahead of the runner, then the runner, then whatever it
     // has already passed — so a rock sweeps past in front of the player.
     _renderTrack(canvas, camera, beyondPlayer: true);
+    _boostEffects.paintTrail(canvas, camera, game.player, boostIntensity);
     _runner.paint(canvas, camera, game.player, game.elapsed);
     _renderTrack(canvas, camera, beyondPlayer: false);
+
+    // Streaks go over everything: they are between the world and the eye.
+    _boostEffects.paintStreaks(canvas, camera, boostIntensity, game.elapsed);
   }
 
   void _renderScenery(Canvas canvas, PerspectiveCamera camera) {
@@ -98,25 +109,34 @@ class TrackView extends Component with HasGameReference<GuzoGame> {
     for (int c = chunks.length - 1; c >= 0; c--) {
       final List<Obstacle> obstacles = chunks[c].obstacles;
       final List<Collectible> collectibles = chunks[c].collectibles;
+      final List<Coin> coins = chunks[c].coins;
 
       int o = obstacles.length - 1;
       int k = collectibles.length - 1;
+      int m = coins.length - 1;
 
-      while (o >= 0 || k >= 0) {
-        // Walk both lists from the back, always taking whichever is further
-        // away so painting runs strictly far to near.
-        final bool takeObstacle =
-            k < 0 || (o >= 0 && obstacles[o].worldZ >= collectibles[k].worldZ);
+      while (o >= 0 || k >= 0 || m >= 0) {
+        // Walk all three lists from the back, each step taking whichever head
+        // is furthest away, so painting runs strictly far to near.
+        final double obstacleZ = o >= 0 ? obstacles[o].worldZ : -1;
+        final double collectibleZ = k >= 0 ? collectibles[k].worldZ : -1;
+        final double coinZ = m >= 0 ? coins[m].worldZ : -1;
 
-        if (takeObstacle) {
+        if (obstacleZ >= collectibleZ && obstacleZ >= coinZ) {
           final Obstacle obstacle = obstacles[o--];
           if (_inPass(camera, obstacle.worldZ, beyondPlayer)) {
             _entities.paintObstacle(canvas, camera, obstacle, travelled);
           }
-        } else {
+        } else if (collectibleZ >= coinZ) {
           final Collectible collectible = collectibles[k--];
           if (_inPass(camera, collectible.worldZ, beyondPlayer)) {
             _paintCollectible(canvas, camera, collectible);
+          }
+        } else {
+          final Coin coin = coins[m--];
+          if (_inPass(camera, coin.worldZ, beyondPlayer) &&
+              !game.coinPickups.isConsumed(coin)) {
+            _coins.paint(canvas, camera, coin, game.elapsed);
           }
         }
       }

@@ -1,4 +1,5 @@
 import '../../utils/constants.dart';
+import 'coin.dart';
 import 'collectible.dart';
 import 'track_chunk.dart';
 import 'world_generator.dart';
@@ -78,6 +79,19 @@ class TrackManager {
         if (collectible.worldZ >= min && collectible.worldZ <= max) {
           yield collectible;
         }
+      }
+    }
+  }
+
+  /// Every coin whose world z sits within [halfWindow] metres of [worldZ].
+  Iterable<Coin> coinsNear(double worldZ, double halfWindow) sync* {
+    final double min = worldZ - halfWindow;
+    final double max = worldZ + halfWindow;
+
+    for (final TrackChunk chunk in _chunks) {
+      if (chunk.endZ < min || chunk.startZ > max) continue;
+      for (final Coin coin in chunk.coins) {
+        if (coin.worldZ >= min && coin.worldZ <= max) yield coin;
       }
     }
   }

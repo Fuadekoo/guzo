@@ -32,12 +32,24 @@ abstract final class GuzoStrings {
   static const String playTogether = 'Play Together';
   static const String challenges = 'Challenges';
 
+  // In-run
+  static const String boost = 'BOOST';
+
   // Run completion
+  static const String youWin = 'YOU WIN!';
   static const String sequenceComplete = 'SEQUENCE COMPLETE!';
   static const String playAgain = 'PLAY AGAIN';
+  static const String newRecord = 'NEW BEST TIME!';
+  static const String previousBest = 'Previous best';
   static const String statTime = 'Time';
   static const String statDistance = 'Distance';
   static const String statCollected = 'Collected';
+  static const String statCoins = 'Coins';
+  static const String statStumbles = 'Bumps';
+
+  // Settings
+  static const String sound = 'Sound';
+  static const String music = 'Music';
 
   // Mode selection
   static const String selectMode = 'Select Mode';
@@ -134,6 +146,16 @@ abstract final class GuzoColors {
 
   static const Color correctFlash = Color(0xFF4CC96A);
   static const Color wrongFlash = Color(0xFFE9484B);
+
+  // Coins
+  static const Color coinFace = Color(0xFFFFD23F);
+  static const Color coinEdge = Color(0xFFB87610);
+  static const Color coinShine = Color(0xFFFFF3C4);
+
+  // Speed boost effects
+  static const Color boostStreak = Color(0xFFFFFFFF);
+  static const Color boostTrail = Color(0xFF3FE0C8);
+  static const Color boostGlow = Color(0xFF00C2A8);
 
   // Runner
   static const Color runnerSkin = Color(0xFF8D5524);
@@ -412,6 +434,62 @@ abstract final class GuzoCollectibles {
 
   /// Spin rate of the target's highlight ring, in turns per second.
   static const double ringTurnsPerSecond = 0.35;
+}
+
+/// Coins and the speed boost they pay for.
+abstract final class GuzoEconomy {
+  // --- Coins --------------------------------------------------------------
+  /// Half-extents of a coin's pickup box, in metres. Generous on purpose:
+  /// coins are a reward, not a test of precision.
+  static const double coinHalfWidth = 0.5;
+  static const double coinHalfHeight = 0.5;
+  static const double coinHalfDepth = 0.5;
+
+  /// Resting height of a coin above the road.
+  static const double coinHeight = 1.05;
+
+  /// Extra height at the top of an arc of coins, which rewards a jump.
+  static const double coinArcLift = 1.3;
+
+  static const int coinsPerPickup = 1;
+
+  /// Coins in one run, and the gap between them.
+  static const int minRunLength = 4;
+  static const int maxRunLength = 8;
+  static const double coinSpacing = 2.2;
+
+  /// Chance a coin run arcs upward instead of lying flat.
+  static const double arcChance = 0.35;
+
+  /// Spin rate of a coin, in turns per second.
+  static const double spinTurnsPerSecond = 0.75;
+
+  // --- Boost --------------------------------------------------------------
+  static const int boostCost = 10;
+  static const double boostDuration = 5.0;
+
+  /// +60% forward speed, as the brief specifies.
+  static const double boostMultiplier = 1.6;
+
+  /// Seconds the effects take to ramp in and out, so the boost does not snap.
+  static const double boostRampIn = 0.25;
+  static const double boostRampOut = 0.5;
+
+  /// How much the camera widens while boosting. A shorter focal length is a
+  /// wider field of view, which is what actually sells the speed.
+  static const double boostFocalScale = 0.90;
+}
+
+/// Sound and music.
+abstract final class GuzoAudioConfig {
+  static const double soundVolume = 0.85;
+  static const double musicVolume = 0.32;
+
+  /// Shortest gap between two plays of the same effect, in seconds.
+  ///
+  /// A run of coins can trigger several pickups in one frame; without this the
+  /// overlapping copies phase into a harsh click.
+  static const double retriggerGuard = 0.05;
 }
 
 /// Asset paths.

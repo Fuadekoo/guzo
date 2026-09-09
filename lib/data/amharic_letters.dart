@@ -9,6 +9,11 @@
 /// * [haFamily] and [laFamily] — every vowel order of a single base character,
 ///   which is how a family is drilled.
 ///
+/// Every entry is on its own line with its transliteration beside it. The list
+/// is long, the glyphs are small, and several pairs differ by a single stroke
+/// (ሀ/ሃ, ሠ/ሰ, ጸ/ፀ) — packed onto shared lines a wrong or missing character
+/// would be nearly impossible to spot in review.
+///
 /// Rendering note: no Latin font contains Ethiopic. The app asks for
 /// `Noto Sans Ethiopic` first (see `GuzoFonts`), and most Android builds ship
 /// it. Bundling the face into `assets/fonts/` removes the doubt — the README
@@ -16,61 +21,72 @@
 abstract final class AmharicLetters {
   /// The 33 base characters in standard order, ሀ through ፐ (U+1200 onward).
   static const List<String> baseLetters = <String>[
-    'ሀ',
-    'ለ',
-    'ሐ',
-    'መ',
-    'ሠ',
-    'ረ',
-    'ሰ',
-    'ሸ',
-    'ቀ',
-    'በ',
-    'ተ',
-    'ቸ',
-    'ኀ',
-    'ነ',
-    'ኘ',
-    'አ',
-    'ከ',
-    'ኸ',
-    'ወ',
-    'ዐ',
-    'ዘ',
-    'ዠ',
-    'የ',
-    'ደ',
-    'ጀ',
-    'ገ',
-    'ጠ',
-    'ጨ',
-    'ጰ',
-    'ጸ',
-    'ፀ',
-    'ፈ',
-    'ፐ',
+    'ሀ', // hä
+    'ለ', // lä
+    'ሐ', // ḥä
+    'መ', // mä
+    'ሠ', // śä
+    'ረ', // rä
+    'ሰ', // sä
+    'ሸ', // šä
+    'ቀ', // qä
+    'በ', // bä
+    'ተ', // tä
+    'ቸ', // čä
+    'ኀ', // ḫä
+    'ነ', // nä
+    'ኘ', // ñä
+    'አ', // ʾä
+    'ከ', // kä
+    'ኸ', // ḵä
+    'ወ', // wä
+    'ዐ', // ʿä
+    'ዘ', // zä
+    'ዠ', // žä
+    'የ', // yä
+    'ደ', // dä
+    'ጀ', // ǧä
+    'ገ', // gä
+    'ጠ', // ṭä
+    'ጨ', // č̣ä
+    'ጰ', // ṗä
+    'ጸ', // ṣä
+    'ፀ', // ḍä
+    'ፈ', // fä
+    'ፐ', // pä
   ];
 
   /// The seven vowel orders of ሀ — the example sequence from the brief.
   static const List<String> haFamily = <String>[
-    'ሀ',
-    'ሁ',
-    'ሂ',
-    'ሃ',
-    'ሄ',
-    'ህ',
-    'ሆ',
+    'ሀ', // hä  — 1st order, ግዕዝ
+    'ሁ', // hu  — 2nd order, ካዕብ
+    'ሂ', // hi  — 3rd order, ሣልስ
+    'ሃ', // ha  — 4th order, ራብዕ
+    'ሄ', // hé  — 5th order, ኃምስ
+    'ህ', // hə  — 6th order, ሳድስ
+    'ሆ', // ho  — 7th order, ሳብዕ
   ];
 
   /// The seven vowel orders of ለ.
   static const List<String> laFamily = <String>[
-    'ለ',
-    'ሉ',
-    'ሊ',
-    'ላ',
-    'ሌ',
-    'ል',
-    'ሎ',
+    'ለ', // lä
+    'ሉ', // lu
+    'ሊ', // li
+    'ላ', // la
+    'ሌ', // lé
+    'ል', // lə
+    'ሎ', // lo
+  ];
+
+  /// The names of the seven vowel orders, in order.
+  static const List<String> vowelOrderNames = <String>[
+    'ግዕዝ', // gəʿəz   — 1st
+    'ካዕብ', // kaʿəb   — 2nd
+    'ሣልስ', // śaləs   — 3rd
+    'ራብዕ', // rabəʿ   — 4th
+    'ኃምስ', // ḫaməs   — 5th
+    'ሳድስ', // sadəs   — 6th
+    'ሳብዕ', // sabəʿ   — 7th
   ];
 
   /// The first ten base characters — a shorter first race.

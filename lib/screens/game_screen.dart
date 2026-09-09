@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../education/sequence_definition.dart';
 import '../game/guzo_game.dart';
 import '../game/input/swipe_recognizer.dart';
-import '../game/overlays/complete_overlay.dart';
+import 'result_screen.dart';
 import '../game/overlays/game_hud.dart';
 import '../game/overlays/pause_overlay.dart';
 import '../utils/constants.dart';
@@ -140,7 +140,7 @@ class _GameScreenState extends State<GameScreen> {
                   GuzoOverlays.pause: (BuildContext context, GuzoGame game) =>
                       PauseOverlay(onResume: _resume, onHome: _goHome),
                   GuzoOverlays.complete:
-                      (BuildContext context, GuzoGame game) => CompleteOverlay(
+                      (BuildContext context, GuzoGame game) => ResultScreen(
                         game: game,
                         onPlayAgain: _playAgain,
                         onHome: _goHome,
